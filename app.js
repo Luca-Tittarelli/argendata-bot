@@ -41,8 +41,8 @@ function getCurrentDateTime() {
 }
 
 function formattedTweet(data, datetime) {
-    return `Principales Cotizaciones al ${datetime}:\n` +
-        data.map(item => `${item.nombre}: $${item.venta}`).join('\n');
+    return `Principales Cotizaciones al ${datetime}💸:\n` +
+        data.map(item => `⚫${item.nombre}: $${item.venta}`).join('\n');
 }
 
 // Crear el cliente de Twitter

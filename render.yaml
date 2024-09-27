@@ -1,0 +1,6 @@
+services:
+  - type: worker # Esto indica que es un background worker, no un servicio web.
+    name: twitter-bot
+    env: node
+    buildCommand: 'npm install'
+    startCommand: 'node tu-archivo-bot.js' # Cambia por el nombre de tu archivo.

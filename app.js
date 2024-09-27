@@ -47,6 +47,8 @@ const client = new TwitterApi({
     accessSecret: process.env.ACCESS_TOKEN_SECRET,
 });
 
+console.log(getCurrentDateTime())
+
 async function tweet() {
     const { dateTimeString, hours, dayOfWeek } = getCurrentDateTime();
 
@@ -75,4 +77,3 @@ async function tweet() {
 // Llamar a la función de tweet cada 30 minutos
 setInterval(tweet, 30 * 60 * 1000);
 tweet()
-const tweetResponse = await client.v2.tweet("hola desde render");

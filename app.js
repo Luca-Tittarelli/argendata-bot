@@ -2,9 +2,14 @@ import { TwitterApi } from 'twitter-api-v2';
 import dotenv from 'dotenv';
 import { dolarAPI } from './apis.js';
 import { format, utcToZonedTime } from 'date-fns-tz';
+import express from 'express'; // Importar Express
 
 // Cargar variables de entorno
 dotenv.config();
+
+// Crear la aplicación Express
+const app = express();
+const PORT = process.env.PORT || 3000; // Usar el puerto definido por Render o 3000 por defecto
 
 async function fetchDollarData() {
     try {
@@ -28,7 +33,7 @@ function getCurrentDateTime() {
     const zonedTime = utcToZonedTime(now, timeZone);
 
     // Formatear la fecha y hora
-    const formattedDateTime = format(zonedTime, 'dd-MM-yyyy HH:mm:ssXXX', { timeZone });
+    const formattedDateTime = format(zonedTime, 'dd-MM HH-mm', { timeZone });
 
     const hours = zonedTime.getHours(); // Obtener horas de la fecha zonificada
     const dayOfWeek = zonedTime.getDay(); // Obtener día de la semana (0 = domingo, 6 = sábado)
@@ -80,6 +85,16 @@ async function tweet() {
     }
 }
 
+// Endpoint para mantener la aplicación activa
+app.get('/ping', (req, res) => {
+    res.send('Pong!');
+});
+
 // Llamar a la función de tweet cada 30 minutos
 setInterval(tweet, 30 * 60 * 1000);
-tweet();
+tweet(); // Llamar inmediatamente para el primer tweet
+
+// Iniciar el servidor
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});

@@ -74,3 +74,4 @@ async function tweet() {
 
 // Llamar a la función de tweet cada 30 minutos
 setInterval(tweet, 30 * 60 * 1000);
+tweet()

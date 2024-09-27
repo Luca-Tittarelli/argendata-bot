@@ -3,4 +3,4 @@ services:
     name: twitter-bot
     env: node
     buildCommand: 'npm install'
-    startCommand: 'node tu-archivo-bot.js' # Cambia por el nombre de tu archivo.
+    startCommand: 'node app.js' # Cambia por el nombre de tu archivo.

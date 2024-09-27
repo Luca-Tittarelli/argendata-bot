@@ -1,6 +1,7 @@
 import { TwitterApi } from 'twitter-api-v2';
 import dotenv from 'dotenv';
 import { dolarAPI } from './apis.js';
+import { format, utcToZonedTime } from 'date-fns-tz';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -17,20 +18,25 @@ async function fetchDollarData() {
 }
 
 function getCurrentDateTime() {
-    const date = new Date();
+    // Obtener la fecha actual en UTC
+    const now = new Date();
 
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Los meses empiezan desde 0, así que sumamos 1
-    const year = date.getFullYear();
+    // Definir la zona horaria de Buenos Aires
+    const timeZone = 'America/Argentina/Buenos_Aires';
 
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
+    // Convertir la fecha actual a la zona horaria de Buenos Aires
+    const zonedTime = utcToZonedTime(now, timeZone);
+
+    // Formatear la fecha y hora
+    const formattedDateTime = format(zonedTime, 'dd-MM-yyyy HH:mm:ssXXX', { timeZone });
+
+    const hours = zonedTime.getHours(); // Obtener horas de la fecha zonificada
+    const dayOfWeek = zonedTime.getDay(); // Obtener día de la semana (0 = domingo, 6 = sábado)
 
     return {
-        dateTimeString: `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`,
+        dateTimeString: formattedDateTime,
         hours: parseInt(hours, 10), // Convertir a número para facilitar comparación
-        dayOfWeek: date.getDay(), // Obtener día de la semana (0 = domingo, 6 = sábado)
+        dayOfWeek: dayOfWeek,
     };
 }
 
@@ -47,7 +53,7 @@ const client = new TwitterApi({
     accessSecret: process.env.ACCESS_TOKEN_SECRET,
 });
 
-console.log(getCurrentDateTime())
+console.log(getCurrentDateTime());
 
 async function tweet() {
     const { dateTimeString, hours, dayOfWeek } = getCurrentDateTime();
@@ -76,4 +82,4 @@ async function tweet() {
 
 // Llamar a la función de tweet cada 30 minutos
 setInterval(tweet, 30 * 60 * 1000);
-tweet()
+tweet();

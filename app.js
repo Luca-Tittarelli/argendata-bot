@@ -1,15 +1,11 @@
-import { TwitterApi } from 'twitter-api-v2';
-import dotenv from 'dotenv';
-import { dolarAPI } from './apis.js';
-import { format, utcToZonedTime } from 'date-fns-tz';
-import express from 'express'; // Importar Express
+const { TwitterApi } = require('twitter-api-v2');
+const dotenv = require('dotenv');
+const { dolarAPI } = require('./apis.js');
+const { format, formatInTimeZone } = require('date-fns-tz');
 
 // Cargar variables de entorno
-dotenv.config();
 
-// Crear la aplicación Express
-const app = express();
-const PORT = process.env.PORT || 3000; // Usar el puerto definido por Render o 3000 por defecto
+dotenv.config();
 
 async function fetchDollarData() {
     try {
@@ -23,25 +19,18 @@ async function fetchDollarData() {
 }
 
 function getCurrentDateTime() {
-    // Obtener la fecha actual en UTC
+    // Obtener la fecha actual en la zona horaria de Buenos Aires
     const now = new Date();
+    const argentinaDate = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'dd-MM HH:mm');
+    const zonedTime = new Date(argentinaDate);
 
-    // Definir la zona horaria de Buenos Aires
-    const timeZone = 'America/Argentina/Buenos_Aires';
-
-    // Convertir la fecha actual a la zona horaria de Buenos Aires
-    const zonedTime = utcToZonedTime(now, timeZone);
-
-    // Formatear la fecha y hora
-    const formattedDateTime = format(zonedTime, 'dd-MM HH-mm', { timeZone });
-
-    const hours = zonedTime.getHours(); // Obtener horas de la fecha zonificada
-    const dayOfWeek = zonedTime.getDay(); // Obtener día de la semana (0 = domingo, 6 = sábado)
+    const hours = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'HH'); // Obtener horas
+    const dayOfWeek = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'i'); // Obtener día de la semana (1 = lunes, 7 = domingo)
 
     return {
-        dateTimeString: formattedDateTime,
+        dateTimeString: argentinaDate,
         hours: parseInt(hours, 10), // Convertir a número para facilitar comparación
-        dayOfWeek: dayOfWeek,
+        dayOfWeek: parseInt(dayOfWeek),
     };
 }
 
@@ -84,17 +73,7 @@ async function tweet() {
         console.log(`Fuera del horario o día permitido (Lunes a Viernes, 10:00 AM - 18:00 PM). No se posteará el tweet.`);
     }
 }
-
-// Endpoint para mantener la aplicación activa
-app.get('/ping', (req, res) => {
-    res.send('Pong!');
-});
-
 // Llamar a la función de tweet cada 30 minutos
-setInterval(tweet, 30 * 60 * 1000);
-tweet(); // Llamar inmediatamente para el primer tweet
-
-// Iniciar el servidor
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// setInterval(tweet, 30 * 60 * 1000);
+// tweet(); // Llamar inmediatamente para el primer tweet
+getCurrentDateTime()

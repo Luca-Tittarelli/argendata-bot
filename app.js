@@ -20,13 +20,13 @@ async function fetchDollarData() {
 
 function getCurrentDateTime() {
     const now = new Date();
-    const argentinaDate = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'dd-MM HH:mm');
-    const hours = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'HH');
+    const argentinaDate = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'dd/MM HH:mm');
+    const hours = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'HHmm');
     const dayOfWeek = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'i');
 
     return {
         dateTimeString: argentinaDate,
-        hours: parseInt(hours, 10),
+        hours: parseInt(hours),
         dayOfWeek: parseInt(dayOfWeek),
     };
 }
@@ -35,6 +35,22 @@ function formattedTweet(changes, datetime) {
     return `Cambios en Cotizaciones al ${datetime}hs💸:\n` +
         changes.map(item => `⚫${item.nombre}: $${item.venta} (${item.change}%)`).join('\n');
 }
+
+function startFormattedTweet(changes){
+    const now = new Date();
+    const argentinaDate = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'dd/MM');
+    return `Así abre el mercado hoy ${argentinaDate}💸\n` +
+        changes.map(item => `⚫${item.nombre}: $${item.venta}`).join('\n');
+}
+
+function endFormattedTweet(changes){
+    const now = new Date();
+    const argentinaDate = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'dd/MM');
+    return `Así cierra el mercado hoy ${argentinaDate}💸\n` +
+        changes.map(item => `⚫${item.nombre}: $${item.venta} (${item.change}%)`).join('\n');
+
+}
+
 
 // Crear el cliente de Twitter
 const client = new TwitterApi({
@@ -48,7 +64,7 @@ async function tweet() {
     const { dateTimeString, hours, dayOfWeek } = getCurrentDateTime();
 
     // Chequear si es de lunes a viernes y si la hora está entre 10:00 y 18:00
-    if (dayOfWeek >= 1 && dayOfWeek <= 5 && hours >= 10 && hours <= 18) {
+    if (dayOfWeek >= 1 && dayOfWeek <= 5 && hours >= 1000 && hours <= 1800) {
         const data = await fetchDollarData();
 
         if (!data) {
@@ -72,11 +88,20 @@ async function tweet() {
                 });
             }
             // Actualizar el valor actual en lastQuotes
+            if(hours === 1000 || hours === 1800)
             lastQuotes[item.nombre] = { venta: currentValue };
         }
+        console.log(changes)
+        let tweetText;
+        if (hours === 1000) {
+            tweetText = startFormattedTweet(changes);
+        } else if (hours === 1800) {
+            tweetText = endFormattedTweet(changes);
+        } else if (changes.length > 0) {
+            tweetText = formattedTweet(changes, dateTimeString);
+        }
 
-        if (changes.length > 0) {
-            const tweetText = formattedTweet(changes, dateTimeString);
+        if (tweetText) {
             try {
                 const tweetResponse = await client.v2.tweet(tweetText);
                 console.log('Tweet posteado:', tweetResponse);

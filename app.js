@@ -109,7 +109,7 @@ async function tweet() {
 
         if (tweetText) {
             try {
-                // const tweetResponse = await client.v2.tweet(tweetText);
+                const tweetResponse = await client.v2.tweet(tweetText);
                 console.log('Tweet posteado:', tweetText);
             } catch (error) {
                 console.error('Error al postear tweet:', error);
@@ -127,11 +127,11 @@ async function getFirstChanges(){
         nombre: item.nombre,
         venta: item.venta
     }));
-    firstChanges = changes;  // Establecer las primeras cotizaciones
+    firstQuotes = changes;  // Establecer las primeras cotizaciones
 }
 
 getFirstChanges().then(() => {
-    console.log('Primeras cotizaciones establecidas:', firstChanges);
+    console.log('Primeras cotizaciones establecidas:', firstQuotes);
 });
 // Ejecutar cada 10 minutos
 setInterval(tweet, 10 * 60 * 1000);  // 10 minutos en milisegundos

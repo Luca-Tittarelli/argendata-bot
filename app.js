@@ -121,7 +121,18 @@ async function tweet() {
         console.log(`Fuera del horario permitido o fin de semana. No se posteará el tweet.`);
     }
 }
+async function getFirstChanges(){
+    const data = await fetchDollarData();
+    const changes = data.map(item => ({
+        nombre: item.nombre,
+        venta: item.venta
+    }));
+    firstChanges = changes;  // Establecer las primeras cotizaciones
+}
 
+getFirstChanges().then(() => {
+    console.log('Primeras cotizaciones establecidas:', firstChanges);
+});
 // Ejecutar cada 10 minutos
 setInterval(tweet, 10 * 60 * 1000);  // 10 minutos en milisegundos
 tweet();  // Primera llamada

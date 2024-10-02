@@ -1,12 +1,15 @@
 const { TwitterApi } = require('twitter-api-v2');
 const dotenv = require('dotenv');
 const { dolarAPI } = require('./apis.js');
-const { format, formatInTimeZone } = require('date-fns-tz');
-let lastQuotes = {}; // Inicializa un objeto vacío para almacenar las últimas cotizaciones
+const { formatInTimeZone } = require('date-fns-tz');
 
-// Cargar variables de entorno
 dotenv.config();
 
+let firstQuotes = {};  // Almacena la primera cotización del día
+let lastQuotes = {};   // Almacena las últimas cotizaciones
+let firstChanges = null; // Para almacenar cambios iniciales
+
+// Función para obtener datos de cotización
 async function fetchDollarData() {
     try {
         const res = await fetch(dolarAPI);
@@ -18,6 +21,7 @@ async function fetchDollarData() {
     }
 }
 
+// Obtener fecha y hora actual en Argentina
 function getCurrentDateTime() {
     const now = new Date();
     const argentinaDate = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'dd/MM HH:mm');
@@ -31,26 +35,25 @@ function getCurrentDateTime() {
     };
 }
 
+// Formato de los tweets
 function formattedTweet(changes, datetime) {
     return `Cambios en Cotizaciones al ${datetime}hs💸:\n` +
         changes.map(item => `⚫${item.nombre}: $${item.venta} (${item.change}%)`).join('\n');
 }
 
-function startFormattedTweet(changes){
+function startFormattedTweet(changes) {
     const now = new Date();
     const argentinaDate = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'dd/MM');
     return `Así abre el mercado hoy ${argentinaDate}💸\n` +
         changes.map(item => `⚫${item.nombre}: $${item.venta}`).join('\n');
 }
 
-function endFormattedTweet(changes){
+function endFormattedTweet(changes) {
     const now = new Date();
     const argentinaDate = formatInTimeZone(now, 'America/Argentina/Buenos_Aires', 'dd/MM');
     return `Así cierra el mercado hoy ${argentinaDate}💸\n` +
         changes.map(item => `⚫${item.nombre}: $${item.venta} (${item.change}%)`).join('\n');
-
 }
-
 
 // Crear el cliente de Twitter
 const client = new TwitterApi({
@@ -60,51 +63,54 @@ const client = new TwitterApi({
     accessSecret: process.env.ACCESS_TOKEN_SECRET,
 });
 
+// Lógica para gestionar los tweets
 async function tweet() {
     const { dateTimeString, hours, dayOfWeek } = getCurrentDateTime();
 
-    // Chequear si es de lunes a viernes y si la hora está entre 10:00 y 18:00
+    // Operar solo de lunes a viernes, entre las 10:00 y 18:00
     if (dayOfWeek >= 1 && dayOfWeek <= 5 && hours >= 1000 && hours <= 1800) {
         const data = await fetchDollarData();
-
-        if (!data) {
-            console.error('No se pudo obtener la información del dólar.');
-            return;
-        }
+        if (!data) return;
 
         const changes = [];
-
         for (const item of data) {
-            const lastValue = lastQuotes[item.nombre] ? lastQuotes[item.nombre].venta : null;
+            const lastValue = lastQuotes[item.nombre]?.venta || null;
             const currentValue = item.venta;
 
-            if (lastValue !== null && lastValue !== currentValue) {
-                // Calcular el porcentaje de cambio
-                const changePercentage = (((currentValue - lastValue) / lastValue) * 100).toFixed(2);
+            // Almacenar la primera cotización del día
+            if (hours === 1000) {
+                firstQuotes[item.nombre] = currentValue; // Guardar el primer valor
+            }
+
+            // Calcular la diferencia porcentual respecto a la primera cotización
+            const firstValue = firstQuotes[item.nombre];
+            if (firstValue !== undefined) {
+                const changePercentage = (((currentValue - firstValue) / firstValue) * 100).toFixed(2);
                 changes.push({
                     nombre: item.nombre,
                     venta: currentValue,
-                    change: changePercentage >= 0 ? `+${changePercentage}` : changePercentage, // Formato del cambio
+                    change: changePercentage >= 0 ? `+${changePercentage}` : changePercentage,
                 });
             }
+
             // Actualizar el valor actual en lastQuotes
-            if(hours === 1000 || hours === 1800)
             lastQuotes[item.nombre] = { venta: currentValue };
         }
-        console.log(changes)
-        let tweetText;
+
+        let tweetText = '';
         if (hours === 1000) {
+            firstChanges = changes;  // Guardar la primera cotización del día
             tweetText = startFormattedTweet(changes);
         } else if (hours === 1800) {
-            tweetText = endFormattedTweet(changes);
+            tweetText = endFormattedTweet(firstChanges);
         } else if (changes.length > 0) {
             tweetText = formattedTweet(changes, dateTimeString);
         }
 
         if (tweetText) {
             try {
-                const tweetResponse = await client.v2.tweet(tweetText);
-                console.log('Tweet posteado:', tweetResponse);
+                // const tweetResponse = await client.v2.tweet(tweetText);
+                console.log('Tweet posteado:', tweetText);
             } catch (error) {
                 console.error('Error al postear tweet:', error);
             }
@@ -112,10 +118,10 @@ async function tweet() {
             console.log('No hubo cambios en las cotizaciones.');
         }
     } else {
-        console.log(`Fuera del horario o día permitido (Lunes a Viernes, 10:00 AM - 18:00 PM). No se posteará el tweet.`);
+        console.log(`Fuera del horario permitido o fin de semana. No se posteará el tweet.`);
     }
 }
 
-// Llamar a la función de tweet cada 10 minutos
-setInterval(tweet, 10 * 60 * 1000);
-tweet(); // Llamar inmediatamente para el primer tweet
+// Ejecutar cada 10 minutos
+setInterval(tweet, 10 * 60 * 1000);  // 10 minutos en milisegundos
+tweet();  // Primera llamada

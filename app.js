@@ -73,8 +73,8 @@ async function tweet() {
         const changes = [];
         for (let i = 0; i < data.length; i++) {
             const currentValue = data[i].venta
-            const lastValue = lastQuotes[i].venta
-            const firstValue = firstQuotes[i].venta
+            const lastValue = lastQuotes[i]?.venta
+            const firstValue = firstQuotes[i]?.venta
 
             if(currentValue !== lastValue && currentValue !== undefined){
                 const changePercentage = (((currentValue - firstValue) / firstValue) * 100).toFixed(2);
@@ -84,7 +84,9 @@ async function tweet() {
                     change: changePercentage >= 0 ? `+${changePercentage}` : changePercentage, // Formato del cambio
                 });
             }
-
+            console.log(currentValue)
+            console.log(lastValue)
+            console.log(firstValue)
         }
         let tweetText = null
         if(hours === 1000){
@@ -97,12 +99,12 @@ async function tweet() {
             tweetText = formattedTweet(changes, dateTimeString)
         }
         if(tweetText){
-            try {
-                const tweetResponse = await client.v2.tweet(tweetText);
-                console.log('Tweet posteado:', tweetResponse);
-            } catch (error) {
-                console.error('Error al postear tweet:', error);
-            }
+            // try {
+            //     const tweetResponse = await client.v2.tweet(tweetText);
+            //     console.log('Tweet posteado:', tweetResponse);
+            // } catch (error) {
+            //     console.error('Error al postear tweet:', error);
+            // }
         }
         else{
             console.log("No hubo cambios en las cotizaciones")
@@ -126,5 +128,5 @@ getFirstChanges().then(() => {
     console.log('Primeras cotizaciones establecidas:', firstQuotes);
 });
 // Ejecutar cada 10 minutos
-setInterval(tweet, 10 * 60 * 1000);  // 10 minutos en milisegundos
+setInterval(tweet,  10 * 1000);  // 10 minutos en milisegundos
 tweet();  // Primera llamada

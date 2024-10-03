@@ -104,6 +104,9 @@ async function tweet() {
                 console.error('Error al postear tweet:', error);
             }
         }
+        else{
+            console.log("No hubo cambios en las cotizaciones")
+        }
         lastQuotes = data
     } else {
         console.log(`Fuera del horario permitido o fin de semana. No se posteará el tweet.`);

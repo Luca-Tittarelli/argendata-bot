@@ -7,7 +7,6 @@ dotenv.config();
 
 let firstQuotes = {};  // Almacena la primera cotización del día
 let lastQuotes = {};   // Almacena las últimas cotizaciones
-let firstChanges = null; // Para almacenar cambios iniciales
 
 // Función para obtener datos de cotización
 async function fetchDollarData() {
@@ -71,56 +70,46 @@ async function tweet() {
     if (dayOfWeek >= 1 && dayOfWeek <= 5 && hours >= 1000 && hours <= 1800) {
         const data = await fetchDollarData();
         if (!data) return;
-
         const changes = [];
-        for (const item of data) {
-            const lastValue = lastQuotes[item.nombre]?.venta || null;
-            const currentValue = item.venta;
+        for (let i = 0; i < data.length; i++) {
+            const currentValue = data[i].venta
+            const lastValue = lastQuotes[i].venta
+            const firstValue = firstQuotes[i].venta
 
-            // Almacenar la primera cotización del día
-            if (hours === 1000) {
-                firstQuotes[item.nombre] = currentValue; // Guardar el primer valor
-            }
-
-            // Calcular la diferencia porcentual respecto a la primera cotización
-            const firstValue = firstQuotes[item.nombre];
-            if (firstValue !== undefined) {
+            if(currentValue !== lastValue && currentValue !== undefined){
                 const changePercentage = (((currentValue - firstValue) / firstValue) * 100).toFixed(2);
                 changes.push({
-                    nombre: item.nombre,
+                    nombre: data[i]?.nombre,
                     venta: currentValue,
-                    change: changePercentage >= 0 ? `+${changePercentage}` : changePercentage,
+                    change: changePercentage >= 0 ? `+${changePercentage}` : changePercentage, // Formato del cambio
                 });
             }
 
-            // Actualizar el valor actual en lastQuotes
-            lastQuotes[item.nombre] = { venta: currentValue };
         }
-
-        let tweetText = '';
-        if (hours === 1000) {
-            firstChanges = changes;  // Guardar la primera cotización del día
-            tweetText = startFormattedTweet(changes);
-        } else if (hours === 1800) {
-            tweetText = endFormattedTweet(firstChanges);
-        } else if (changes.length > 0) {
-            tweetText = formattedTweet(changes, dateTimeString);
+        let tweetText = null
+        if(hours === 1000){
+            tweetText = startFormattedTweet(data, dateTimeString)
+        } 
+        else if (hours === 1800) {
+            tweetText = endFormattedTweet(data, dateTimeString);
+        } 
+        else if(changes.length > 0){
+            tweetText = formattedTweet(changes, dateTimeString)
         }
-
-        if (tweetText) {
+        if(tweetText){
             try {
                 const tweetResponse = await client.v2.tweet(tweetText);
-                console.log('Tweet posteado:', tweetText);
+                console.log('Tweet posteado:', tweetResponse);
             } catch (error) {
                 console.error('Error al postear tweet:', error);
             }
-        } else {
-            console.log('No hubo cambios en las cotizaciones.');
         }
+        lastQuotes = data
     } else {
         console.log(`Fuera del horario permitido o fin de semana. No se posteará el tweet.`);
     }
 }
+
 async function getFirstChanges(){
     const data = await fetchDollarData();
     const changes = data.map(item => ({

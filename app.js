@@ -76,7 +76,7 @@ async function tweet() {
             const lastValue = lastQuotes[i]?.venta
             const firstValue = firstQuotes[i]?.venta
 
-            if(currentValue !== lastValue && currentValue !== undefined){
+            if(currentValue !== lastValue && currentValue !== undefined && lastValue !== undefined){
                 const changePercentage = (((currentValue - firstValue) / firstValue) * 100).toFixed(2);
                 changes.push({
                     nombre: data[i]?.nombre,
@@ -99,12 +99,12 @@ async function tweet() {
             tweetText = formattedTweet(changes, dateTimeString)
         }
         if(tweetText){
-            // try {
-            //     const tweetResponse = await client.v2.tweet(tweetText);
-            //     console.log('Tweet posteado:', tweetResponse);
-            // } catch (error) {
-            //     console.error('Error al postear tweet:', error);
-            // }
+            try {
+                const tweetResponse = await client.v2.tweet(tweetText);
+                console.log('Tweet posteado:', tweetResponse);
+            } catch (error) {
+                console.error('Error al postear tweet:', error);
+            }
         }
         else{
             console.log("No hubo cambios en las cotizaciones")

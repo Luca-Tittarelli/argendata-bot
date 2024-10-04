@@ -84,16 +84,20 @@ async function tweet() {
                     change: changePercentage >= 0 ? `+${changePercentage}` : changePercentage, // Formato del cambio
                 });
             }
-            console.log(currentValue)
-            console.log(lastValue)
-            console.log(firstValue)
+            if(hours === 1800){
+                changes.push({
+                    nombre: data[i]?.nombre,
+                    venta: currentValue,
+                    change: changePercentage >= 0 ? `+${changePercentage}` : changePercentage, // Formato del cambio
+                });
+            }
         }
         let tweetText = null
         if(hours === 1000){
             tweetText = startFormattedTweet(data, dateTimeString)
         } 
         else if (hours === 1800) {
-            tweetText = endFormattedTweet(data, dateTimeString);
+            tweetText = endFormattedTweet(changes, dateTimeString);
         } 
         else if(changes.length > 0){
             tweetText = formattedTweet(changes, dateTimeString)
@@ -128,5 +132,5 @@ getFirstChanges().then(() => {
     console.log('Primeras cotizaciones establecidas:', firstQuotes);
 });
 // Ejecutar cada 10 minutos
-setInterval(tweet,  10 * 1000);  // 10 minutos en milisegundos
+setInterval(tweet, 10 * 60 * 1000);  // 10 minutos en milisegundos
 tweet();  // Primera llamada

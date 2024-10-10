@@ -85,6 +85,7 @@ async function tweet() {
                 });
             }
             if(hours === 1800){
+                const changePercentage = (((currentValue - firstValue) / firstValue) * 100).toFixed(2);
                 changes.push({
                     nombre: data[i]?.nombre,
                     venta: currentValue,
